@@ -1,0 +1,284 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "array",
+  "items": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "firstName": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Legal first name"
+      },
+      "lastName": {
+        "type": "string",
+        "minLength": 1
+      },
+      "preferredName": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "The name they go by, if it is not their first name"
+      },
+      "dateOfBirth": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "sex": {
+        "anyOf": [
+          {
+            "type": "string",
+            "enum": [
+              "female",
+              "male"
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Sex as recorded for insurance"
+      },
+      "genderIdentity": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "pronouns": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "email": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "email",
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "phone": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "address": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "line1": {
+                "type": "string",
+                "minLength": 1
+              },
+              "line2": {
+                "default": null,
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "city": {
+                "type": "string",
+                "minLength": 1
+              },
+              "state": {
+                "type": "string",
+                "minLength": 1
+              },
+              "postalCode": {
+                "type": "string",
+                "minLength": 1
+              },
+              "country": {
+                "default": "US",
+                "description": "Two-letter country code",
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "line1",
+              "city",
+              "state",
+              "postalCode"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "active",
+          "inactive",
+          "discharged"
+        ]
+      },
+      "primaryClinicianId": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "The team member who mainly sees them"
+      },
+      "diagnoses": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "pattern": "^[A-Z][0-9][0-9A-Z](\\.[0-9A-Z]{1,4})?$"
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "code",
+            "description"
+          ],
+          "additionalProperties": false
+        },
+        "description": "ICD-10-CM diagnoses"
+      },
+      "contacts": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "relationship": {
+              "type": "string",
+              "minLength": 1,
+              "description": "How they are related to the client, such as Mother or Friend"
+            },
+            "phone": {
+              "default": null,
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "email": {
+              "default": null,
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "email",
+                  "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "isEmergencyContact": {
+              "default": false,
+              "type": "boolean"
+            },
+            "isGuardian": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "name",
+            "relationship"
+          ],
+          "additionalProperties": false
+        },
+        "description": "Emergency contacts and guardians"
+      },
+      "billingType": {
+        "type": "string",
+        "enum": [
+          "insurance",
+          "self_pay"
+        ]
+      },
+      "referralSource": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "How they found the practice"
+      },
+      "createdAt": {
+        "description": "When they became a client",
+        "type": "string",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+      }
+    },
+    "required": [
+      "firstName",
+      "lastName"
+    ],
+    "additionalProperties": false
+  }
+}

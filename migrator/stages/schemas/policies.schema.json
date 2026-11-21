@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "array",
+  "items": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "clientId": {
+        "type": "string",
+        "minLength": 1
+      },
+      "coverage": {
+        "type": "string",
+        "enum": [
+          "primary",
+          "secondary",
+          "tertiary"
+        ],
+        "description": "Which policy pays first"
+      },
+      "payerName": {
+        "type": "string",
+        "minLength": 1,
+        "description": "The insurance company"
+      },
+      "electronicPayerId": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "The ID claims are sent to through a clearinghouse, such as 60054"
+      },
+      "planName": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "memberId": {
+        "type": "string",
+        "minLength": 1
+      },
+      "groupNumber": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "subscriber": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "relationship": {
+                "type": "string",
+                "enum": [
+                  "self",
+                  "spouse",
+                  "child",
+                  "other"
+                ],
+                "description": "self when the client holds it, child when a parent does, spouse, or other"
+              },
+              "firstName": {
+                "type": "string",
+                "minLength": 1
+              },
+              "lastName": {
+                "type": "string",
+                "minLength": 1
+              },
+              "dateOfBirth": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "relationship",
+              "firstName",
+              "lastName",
+              "dateOfBirth"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "The person who holds the policy: the client (self), a spouse or a parent. Null when not recorded"
+      },
+      "copay": {
+        "anyOf": [
+          {
+            "type": "number",
+            "minimum": 0
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "deductible": {
+        "anyOf": [
+          {
+            "type": "number",
+            "minimum": 0
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "effectiveFrom": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "effectiveTo": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Null while the policy is current"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "active",
+          "inactive"
+        ]
+      }
+    },
+    "required": [
+      "clientId",
+      "payerName",
+      "memberId"
+    ],
+    "additionalProperties": false
+  }
+}

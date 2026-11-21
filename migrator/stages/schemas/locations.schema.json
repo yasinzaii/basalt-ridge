@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "array",
+  "items": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 1
+      },
+      "kind": {
+        "type": "string",
+        "enum": [
+          "in_person",
+          "telehealth"
+        ]
+      },
+      "address": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "line1": {
+                "type": "string",
+                "minLength": 1
+              },
+              "line2": {
+                "default": null,
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "city": {
+                "type": "string",
+                "minLength": 1
+              },
+              "state": {
+                "type": "string",
+                "minLength": 1
+              },
+              "postalCode": {
+                "type": "string",
+                "minLength": 1
+              },
+              "country": {
+                "default": "US",
+                "description": "Two-letter country code",
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "line1",
+              "city",
+              "state",
+              "postalCode"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "phone": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "placeOfService": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "pattern": "^\\d{2}$"
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "code",
+              "description"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "The CMS place of service code claims use, such as 11 (office) or 10 (telehealth at home)"
+      }
+    },
+    "required": [
+      "name",
+      "kind"
+    ],
+    "additionalProperties": false
+  }
+}

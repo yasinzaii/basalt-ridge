@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "array",
+  "items": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 1
+      },
+      "cptCode": {
+        "anyOf": [
+          {
+            "type": "string",
+            "pattern": "^([0-9]{4}[0-9A-Z]|[A-Z][0-9]{4})$"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "CPT or HCPCS code. Null for services that are not billed to insurance"
+      },
+      "modifiers": {
+        "maxItems": 4,
+        "type": "array",
+        "items": {
+          "type": "string",
+          "pattern": "^[0-9A-Z]{2}$"
+        },
+        "description": "Billing modifiers, such as 95 for telehealth"
+      },
+      "durationMinutes": {
+        "type": "integer",
+        "exclusiveMinimum": 0,
+        "maximum": 9007199254740991
+      },
+      "rate": {
+        "type": "number",
+        "minimum": 0,
+        "description": "Fee, in the practice's currency"
+      }
+    },
+    "required": [
+      "name",
+      "durationMinutes"
+    ],
+    "additionalProperties": false
+  }
+}

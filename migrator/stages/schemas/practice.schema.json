@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "legalName": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "npi": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^\\d{10}$"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Organisation (Type 2) NPI"
+    },
+    "taxId": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Employer identification number, such as 12-3456789"
+    },
+    "taxonomyCode": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "NUCC provider taxonomy code"
+    },
+    "email": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "email",
+          "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "phone": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "website": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "address": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "line1": {
+              "type": "string",
+              "minLength": 1
+            },
+            "line2": {
+              "default": null,
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "city": {
+              "type": "string",
+              "minLength": 1
+            },
+            "state": {
+              "type": "string",
+              "minLength": 1
+            },
+            "postalCode": {
+              "type": "string",
+              "minLength": 1
+            },
+            "country": {
+              "default": "US",
+              "description": "Two-letter country code",
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "line1",
+            "city",
+            "state",
+            "postalCode"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "timezone": {
+      "type": "string",
+      "description": "The IANA time zone the practice works in. Pages show times in it"
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    }
+  },
+  "additionalProperties": false
+}
