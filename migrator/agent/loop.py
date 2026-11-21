@@ -78,10 +78,19 @@ async def run_agent(
             }]}
             tool_message = {"role": "tool", "tool_call_id": call.id, "content": result}
             history = base_history + [assistant_message, tool_message.copy()]
-            compact_result = json.loads(result)
-            compact_result.pop("snapshot", None)
-            compact_result.get("observation", {}).pop("snapshot", None)
-            tool_message["content"] = json.dumps(compact_result)
+            try:
+                compact_result = json.loads(result)
+            except ValueError:
+                compact_result = None
+
+            if isinstance(compact_result, dict):
+                compact_result.pop("snapshot", None)
+
+                observation = compact_result.get("observation")
+                if isinstance(observation, dict):
+                    observation.pop("snapshot", None)
+
+                tool_message["content"] = json.dumps(compact_result)
             base_history.extend([assistant_message, tool_message])
         elif reply.finish_reason == "stop" and not reply.tool_calls:
             value = _json_object(reply.content)
