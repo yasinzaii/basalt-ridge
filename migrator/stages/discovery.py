@@ -27,6 +27,9 @@ async def run_discovery(backend: ModelBackend, browser: BrowserSession, login: d
             "You are a practice discovery agent. The operator has confirmed login. "
             "Do not log in again or request credentials. First use browser_observe. "
             "Inspect practice structure and available export options using navigation only. "
+            "Include a nonblank summary of at most 240 characters with every tool call: "
+            "the intended action, target and purpose. Only claim earlier outcomes "
+            "confirmed by observations. "
             "Return a concise structured report.\n\n" + playbook
         )},
         {"role": "user", "content": "Operator handoff: " + json.dumps(login) +

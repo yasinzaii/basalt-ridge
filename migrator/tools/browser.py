@@ -10,7 +10,14 @@ BROWSER_TOOLS = [
     {"type": "function", "function": {
         "name": "browser_observe", "description": "Return the current Playwright AI snapshot with actionable refs.",
         "strict": True,
-        "parameters": {"type": "object", "properties": {}, "required": [], "additionalProperties": False},
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "summary": {"type": "string", "minLength": 1, "maxLength": 240,
+                            "description": "Describe the intended observation and its purpose; not proof of its outcome."},
+            },
+            "required": ["summary"], "additionalProperties": False,
+        },
     }},
     {"type": "function", "function": {
         "name": "browser_action",
@@ -22,8 +29,10 @@ BROWSER_TOOLS = [
                 "action": {"type": "string", "enum": sorted(ACTIONS)},
                 "ref": {"type": "string"},
                 "value": {"type": ["string", "null"]},
+                "summary": {"type": "string", "minLength": 1, "maxLength": 240,
+                            "description": "Describe the intended action, target and purpose; not proof of its outcome."},
             },
-            "required": ["action", "ref", "value"], "additionalProperties": False,
+            "required": ["action", "ref", "value", "summary"], "additionalProperties": False,
         },
     }},
 ]

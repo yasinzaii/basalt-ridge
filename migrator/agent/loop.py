@@ -48,7 +48,8 @@ async def run_agent(
             raise ValueError("Duplicate tool definition")
         Draft202012Validator.check_schema(function["parameters"])
         validators[function["name"]] = Draft202012Validator(function["parameters"])
-    history = deepcopy(messages)
+    base_history = deepcopy(messages)
+    history = base_history.copy()
     seen_calls = set()
     schema = output_type.model_json_schema()
     for turn in range(max_turns):
@@ -65,17 +66,23 @@ async def run_agent(
             if turn == max_turns - 1:
                 raise TurnLimitExceeded("No model turn remains to process a tool result")
             seen_calls.add(call.id)
+            summary = arguments.pop("summary", None)
             result = await execute_tool(call.name, arguments)
             if not isinstance(result, str):
                 raise TypeError("Tool handlers must return serialized text")
-            history.extend([
-                {"role": "assistant", "content": reply.content, "tool_calls": [{
-                    "id": call.id, "type": "function", "function": {
-                        "name": call.name, "arguments": call.arguments,
-                    },
-                }]},
-                {"role": "tool", "tool_call_id": call.id, "content": result},
-            ])
+            content = "\n".join(part for part in (reply.content, summary) if part is not None) or None
+            assistant_message = {"role": "assistant", "content": content, "tool_calls": [{
+                "id": call.id, "type": "function", "function": {
+                    "name": call.name, "arguments": json.dumps(arguments),
+                },
+            }]}
+            tool_message = {"role": "tool", "tool_call_id": call.id, "content": result}
+            history = base_history + [assistant_message, tool_message.copy()]
+            compact_result = json.loads(result)
+            compact_result.pop("snapshot", None)
+            compact_result.get("observation", {}).pop("snapshot", None)
+            tool_message["content"] = json.dumps(compact_result)
+            base_history.extend([assistant_message, tool_message])
         elif reply.finish_reason == "stop" and not reply.tool_calls:
             value = _json_object(reply.content)
             try:
