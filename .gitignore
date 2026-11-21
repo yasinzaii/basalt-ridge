@@ -8,3 +8,7 @@ workspace/
 .venv/
 __pycache__/
 *.py[cod]
+artifacts/
+playwright/.auth/
+test-results/
+playwright-report/
