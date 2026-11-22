@@ -53,7 +53,7 @@ class ChatCompletionsBackend:
         except TimeoutError:
             raise ModelError("Model request timed out") from None
         except APIError as exc:
-            raise ModelError(f"Model request failed ({type(exc).__name__})") from None
+            raise ModelError(f"Model request failed: {exc}") from None
         if len(response.choices) != 1:
             raise ModelError("Expected one model response")
         choice = response.choices[0]

@@ -12,14 +12,15 @@ from migrator.browser.session import open_browser
 from migrator.llm.config import ModelConfig
 from migrator.llm.model import ModelError, connect_model
 from migrator.stages.clients import run_clients, save_clients
+from migrator.stages.appointments import run_appointments, save_appointments
 
 
 ROOT = Path(__file__).resolve().parent
 LOGIN_URL = "https://www.cliniko.com/login/"
-STAGES = {"clients": (run_clients, save_clients)}
+STAGES = {"appointments": (run_appointments, save_appointments), "clients": (run_clients, save_clients)}
 
 
-async def run(stage: str = "clients", playbook: Path | None = None, output: Path | None = None) -> None:
+async def run(stage: str = "appointments", playbook: Path | None = None, output: Path | None = None) -> None:
     run_stage, save_stage = STAGES[stage]
     playbook = playbook or ROOT / f"migrator/playbooks/cliniko/{stage}.md"
     stamp = datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S_%f")
@@ -44,7 +45,7 @@ async def run(stage: str = "clients", playbook: Path | None = None, output: Path
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage", choices=STAGES, default="clients")
+    parser.add_argument("--stage", choices=STAGES, default="appointments")
     parser.add_argument("--playbook", type=Path)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
