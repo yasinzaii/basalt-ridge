@@ -18,10 +18,12 @@ BROWSER_TOOLS = [
             "properties": {
                 "save_result": {"type": "boolean",
                                 "description": "Save this exact result to JSON and return its memory_id when true."},
+                "offset": {"type": "integer", "minimum": 0,
+                           "description": "Snapshot character offset: 0 initially, then use next_offset when truncated."},
                 "summary": {"type": "string", "minLength": 1, "maxLength": 240,
-                            "description": "Describe the intended observation and its purpose; not proof of its outcome."},
+                            "description": "Summarize verified findings from the previous observation and the next intended step."},
             },
-            "required": ["summary", "save_result"], "additionalProperties": False,
+            "required": ["summary", "save_result", "offset"], "additionalProperties": False,
         },
     }},
     {"type": "function", "function": {
@@ -37,7 +39,7 @@ BROWSER_TOOLS = [
                 "ref": {"type": "string"},
                 "value": {"type": ["string", "null"]},
                 "summary": {"type": "string", "minLength": 1, "maxLength": 240,
-                            "description": "Describe the intended action, target and purpose; not proof of its outcome."},
+                            "description": "Summarize verified findings from the previous observation and the next intended action."},
             },
             "required": ["action", "ref", "value", "summary", "save_result"], "additionalProperties": False,
         },
@@ -60,7 +62,7 @@ def create_browser_tools(browser: BrowserSession, *, memory_directory: Path, all
         save_result = arguments.pop("save_result")
         try:
             if name == "browser_observe":
-                result = await browser.observe()
+                result = await browser.observe(offset=arguments["offset"])
             elif name == "browser_action":
                 if arguments["action"] not in permitted:
                     raise BrowserActionError("This action is not permitted in the current stage")

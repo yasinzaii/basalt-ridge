@@ -1,23 +1,26 @@
-"""Schemas and dispatch for workspace file tools."""
 
-import json
+from pathlib import Path
 
-from .files import LIST_FILES_SCHEMA, READ_FILE_SCHEMA, list_files, read_file
-
-
-TOOLS = [READ_FILE_SCHEMA, LIST_FILES_SCHEMA]
+from migrator.tools.browser import create_browser_tools
+from migrator.tools.memory import create_memory_tools
 
 
-async def execute_tool(name: str, arguments: dict) -> str:
-    # run_agent validates arguments against TOOLS before dispatching.
-    if name == "list_files":
-        try:
-            return list_files(**arguments)
-        except (OSError, ValueError) as exc:
-            return json.dumps({"error": type(exc).__name__, "message": "Could not list the requested workspace directory; check the relative directory path."})
-    if name == "read_file":
-        try:
-            return read_file(**arguments)
-        except (OSError, UnicodeError, ValueError) as exc:
-            return json.dumps({"error": type(exc).__name__, "message": "Could not read the requested workspace text file; check the path, UTF-8 encoding, and 100,000-byte limit."})
-    raise ValueError("Unknown tool")
+def create_tools(browser, *, memory_directory: Path, allowed_actions=None):
+    browser_tools, execute_browser = create_browser_tools(
+        browser,
+        allowed_actions=allowed_actions,
+        memory_directory=memory_directory,
+    )
+
+    memory_tools, execute_memory = create_memory_tools(
+        memory_directory
+    )
+
+    async def execute(name: str, arguments: dict) -> str:
+        if name == "memory_load":
+            browser.invalidate_refs()
+            return await execute_memory(name, arguments)
+
+        return await execute_browser(name, arguments)
+
+    return browser_tools + memory_tools, execute

@@ -33,21 +33,36 @@ class BrowserSession:
     def invalidate_refs(self) -> None:
         self._refs.clear()
 
-    async def observe(self) -> dict:
+    async def observe(self, offset: int = 0) -> dict:
         self.check_page()
         self.invalidate_refs()
+
         page = self.page
-        await page.wait_for_load_state("domcontentloaded")
+
+        await page.wait_for_load_state("load")
+        await page.wait_for_timeout(250)
+
         url = page.url
         snapshot = await page.aria_snapshot(mode="ai")
+
         if self.page != page or page.url != url:
             raise BrowserActionError("Page changed during observation; observe again")
+
         self.check_page()
-        truncated = len(snapshot) > 20_000
-        snapshot = snapshot[:20_000]
+
+        next_offset = offset + 20_000 if offset + 20_000 < len(snapshot) else None
+        snapshot = snapshot[offset:offset + 20_000]
+
         self._refs = set(REF_PATTERN.findall(snapshot))
         self._observed_url = url
-        return {"url": url, "snapshot": snapshot, "truncated": truncated}
+
+        return {
+            "url": url,
+            "snapshot": snapshot,
+            "truncated": next_offset is not None,
+            "next_offset": next_offset,
+        }
+
 
     async def action(self, action: str, ref: str, value: str | None) -> dict:
         self.check_page()

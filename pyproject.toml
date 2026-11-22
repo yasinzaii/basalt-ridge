@@ -6,6 +6,7 @@ dependencies = [
     "openai",
     "pydantic>=2",
     "jsonschema>=4",
+    "tzdata",
     "playwright>=1.64",
 ]
 
