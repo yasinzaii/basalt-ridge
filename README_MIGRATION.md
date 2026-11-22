@@ -16,3 +16,7 @@ Notes: After Adding Practice Stage Agent.
 
 > A better apporach i think would be to build a json creator/updator/manager that is able to create, update and manage json and then provide functions/tools to the AI agent to manage, change, update the json based on the information in the source. But for now due to time limiation i would skip it. 
 
+Notes: After Adding Client Stage Agent. 
+
+> New tools provided to the agent, the agent is able to download CSV with client details using the tools and read the CSV to extract the required fileds as per mock Carepatron schema. 
+

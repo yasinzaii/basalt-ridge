@@ -36,7 +36,7 @@ def _json_object(text: str) -> dict:
 async def run_agent(
     backend: ModelBackend, messages: list[dict], tools: list[dict],
     execute_tool: Callable[[str, dict], Awaitable[str]], output_schema: dict,
-    max_turns: int = 20,
+    max_turns: int = 60,
 ) -> dict:
     if max_turns < 1:
         raise ValueError("max_turns must be positive")
@@ -66,6 +66,8 @@ async def run_agent(
             if turn == max_turns - 1:
                 raise TurnLimitExceeded("No model turn remains to process a tool result")
             seen_calls.add(call.id)
+            if summary := arguments.get("summary"):
+                print(summary, flush=True)
             tool_arguments = {key: value for key, value in arguments.items() if key != "summary"}
             result = await execute_tool(call.name, tool_arguments)
             if not isinstance(result, str):

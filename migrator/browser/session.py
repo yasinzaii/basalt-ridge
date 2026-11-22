@@ -2,6 +2,8 @@
 
 from contextlib import asynccontextmanager
 import re
+from pathlib import Path
+from uuid import uuid4
 
 from playwright.async_api import async_playwright
 
@@ -64,6 +66,26 @@ class BrowserSession:
         }
 
 
+    async def download(self, ref: str, directory: Path) -> dict:
+        self.check_page()
+        if ref not in self._refs or self.page.url != self._observed_url:
+            raise BrowserActionError("Reference is not in the current snapshot; observe again")
+        target = self.page.get_by_ref(ref)
+        if not await target.is_enabled():
+            raise BrowserActionError(
+                "Control is disabled; no action was performed. Open its associated input or "
+                "wait for a state change, then use the enabled control from a fresh snapshot."
+            )
+        self.invalidate_refs()
+        async with self.page.expect_download(timeout=60_000) as pending:
+            await target.click()
+        download = await pending.value
+        directory.mkdir(parents=True, exist_ok=True)
+        # Keep the vendor filename as metadata, never as a filesystem path.
+        filename = uuid4().hex + ".csv"
+        await download.save_as(directory / filename)
+        return {"path": filename, "suggested_filename": download.suggested_filename}
+
     async def action(self, action: str, ref: str, value: str | None) -> dict:
         self.check_page()
         if action not in ACTIONS:
@@ -76,6 +98,11 @@ class BrowserSession:
         elif value is not None:
             raise BrowserActionError("This action requires value=null")
         target = self.page.get_by_ref(ref)
+        if not await target.is_enabled():
+            raise BrowserActionError(
+                "Control is disabled; no action was performed. Open its associated input or "
+                "wait for a state change, then use the enabled control from a fresh snapshot."
+            )
         self.invalidate_refs()
         if action == "fill":
             await target.fill(value)
