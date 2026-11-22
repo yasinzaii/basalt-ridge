@@ -20,3 +20,6 @@ Notes: After Adding Client Stage Agent.
 
 > New tools provided to the agent, the agent is able to download CSV with client details using the tools and read the CSV to extract the required fileds as per mock Carepatron schema. 
 
+Notes: After Adding Appointemt Stage Agent.
+
+> Similar to the client agent. Some of the practice management software provide APIs - for these i could have just provided the AI Agent with API Adapters or MCP client - I could have implemented if i had more time - but for now i will skip it.
