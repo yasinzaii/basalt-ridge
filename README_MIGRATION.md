@@ -23,3 +23,14 @@ Notes: After Adding Client Stage Agent.
 Notes: After Adding Appointemt Stage Agent.
 
 > Similar to the client agent. Some of the practice management software provide APIs - for these i could have just provided the AI Agent with API Adapters or MCP client - I could have implemented if i had more time - but for now i will skip it.
+
+
+Notes: After completing the Migrator Agent pipeline. 
+
+> I have just ran a successful run for the cliniko PMS system. What I did is first I loaded everything in a json files. These jsons were exactly according to the schema of mock carepatron API - I did this to keep the extractor modular and i was testing and developing all of the stages without running the mock carepatron app.
+
+> I think the overall archiecture is good and modular but it is far from perfect. The biggest issue is that I am at the mercy of AI agent to give me a final perfect JSON record according to the schema - which it does - and the json keys are there but what about the values ?
+
+> I think a better achitetcure design would be to provide a json record updator tools that allows the AI agent to keep updating the record and the json manger/updator should also provide feedback to the agent of what keys are missing are needed etc. and it should has have validation mechanism for hilluciantion detection etc. 
+
+> Now I will try running the application on other PMS systems. Hopefully I just need to provide source specific playbooks and everything should work. Hopefully ;p
