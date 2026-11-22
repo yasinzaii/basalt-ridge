@@ -13,11 +13,12 @@ from migrator.llm.config import ModelConfig
 from migrator.llm.model import ModelError, connect_model
 from migrator.stages.clients import run_clients, save_clients
 from migrator.stages.appointments import run_appointments, save_appointments
+from migrator.stages.notes import run_notes, save_notes
 
 
 ROOT = Path(__file__).resolve().parent
 LOGIN_URL = "https://www.cliniko.com/login/"
-STAGES = {"appointments": (run_appointments, save_appointments), "clients": (run_clients, save_clients)}
+STAGES = {"appointments": (run_appointments, save_appointments), "clients": (run_clients, save_clients), "notes": (run_notes, save_notes)}
 
 
 async def run(stage: str = "appointments", playbook: Path | None = None, output: Path | None = None) -> None:
@@ -45,7 +46,7 @@ async def run(stage: str = "appointments", playbook: Path | None = None, output:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage", choices=STAGES, default="appointments")
+    parser.add_argument("--stage", choices=STAGES, default="notes")
     parser.add_argument("--playbook", type=Path)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
