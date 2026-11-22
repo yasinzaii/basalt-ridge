@@ -1,8 +1,9 @@
 from copy import deepcopy
-import json
 from pathlib import Path
 
 from jsonschema import Draft202012Validator, FormatChecker, ValidationError
+
+from migrator.utils.files import read_json
 
 
 SCHEMA_DIR = Path(__file__).resolve().parents[1] / "stages" / "schemas"
@@ -10,7 +11,7 @@ SCHEMA_DIR = Path(__file__).resolve().parents[1] / "stages" / "schemas"
 
 def load_schema(name: str) -> dict:
     path = SCHEMA_DIR / f"{name}.schema.json"
-    return json.loads(path.read_text(encoding="utf-8"))
+    return read_json(path)
 
 
 def _allows_null(schema: dict) -> bool:

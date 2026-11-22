@@ -1,5 +1,6 @@
-import json
 from pathlib import Path
+
+from migrator.utils.files import read_json
 
 
 def validate_run(directory: Path, manifest: dict) -> dict:
@@ -13,7 +14,7 @@ def validate_run(directory: Path, manifest: dict) -> dict:
         path = directory / stage / f"{resource}.json"
         if manifest["stages"][stage]["status"] != "completed":
             return []
-        records = json.loads(path.read_text(encoding="utf-8"))
+        records = read_json(path)
         counts[resource] = len(records)
         return records
 
@@ -99,7 +100,7 @@ def validate_run(directory: Path, manifest: dict) -> dict:
     limitations = {}
     for name, state in manifest["stages"].items():
         if state["status"] == "completed":
-            report = json.loads((directory / name / "report.json").read_text(encoding="utf-8"))
+            report = read_json(directory / name / "report.json")
             if report["limitations"]:
                 limitations[name] = report["limitations"]
             for record_id, fields in report.get("missing_fields", {}).items():

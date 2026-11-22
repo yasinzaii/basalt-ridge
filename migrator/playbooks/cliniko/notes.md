@@ -22,12 +22,16 @@ Map the actual CSV headers (never assumed column positions):
 - **Treatment Note ID** → `sourceId`
 - **Patient ID** → `note.clientId` (Cliniko ID, not Carepatron ID)
 - **Appointment ID** → `note.appointmentId` if present; otherwise null
-- **Practitioner** → `sourceRefs.authorName`; the export has no practitioner ID,
-  so `note.authorId=null` unless an ID is separately verified
+- **Practitioner** → `sourceRefs.authorName`. The CSV has no author ID. Go to
+  **Settings → Users & practitioners**, find the practitioner by name, and read
+  the matching user's ID from the user details link or a labelled field. Put that
+  source user ID in `note.authorId` for their notes. Use the user ID, not a
+  practitioner profile ID. If the name is ambiguous or the user ID is unavailable,
+  omit those notes and report the reason; do not invent an ID.
 - **Template ID** → `sourceRefs.templateId`, NOT `note.template` (which is descriptive text)
 - **Title** → `note.title`
 - **Draft = Yes** → `note.status="draft"`; otherwise unknown unless signing is evidenced
-- **CreatedAt** → `note.createdAt` (ISO 8601 with seconds and original UTC offset)
+- **CreatedAt** → `note.createdAt` (copy the source timestamp in ISO 8601 with seconds and original UTC offset; do not use the export time)
 - **Text** → `note.content` (copy the complete CSV field directly).
 
 Do not rewrite, summarize, split question sections, normalize HTML,

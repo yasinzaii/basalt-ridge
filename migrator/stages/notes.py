@@ -10,8 +10,9 @@ def notes_output_schema() -> dict:
     text = {"type": "string", "minLength": 1}
     nullable = {"anyOf": [text, {"type": "null"}]}
     note = model_schema(load_schema("notes")["items"])
-    for key in ("authorId", "dateOfService"):
-        note["properties"][key] = {"anyOf": [note["properties"][key], {"type": "null"}]}
+    note["properties"]["dateOfService"] = {
+        "anyOf": [note["properties"]["dateOfService"], {"type": "null"}]
+    }
 
     refs = {"authorName": nullable, "templateId": nullable}
     record = {
@@ -43,10 +44,12 @@ async def run_notes(backend, browser, playbook_path: Path, *, memory_directory: 
     messages = [
         {"role": "system", "content": (
             "Extract fictional trial treatment notes using the source playbook and Carepatron field names. "
-            "During extraction, note.clientId and note.appointmentId hold verified SOURCE IDs, "
-            "which must be replaced by Carepatron IDs at import. Never invent destination IDs. "
-            "The CSV has a practitioner name but no practitioner ID: set authorId=null and "
-            "preserve the name as sourceRefs.authorName. Do not infer an ID from the name. "
+            "During extraction, note.clientId, note.appointmentId and note.authorId hold verified "
+            "SOURCE IDs, which must be replaced by Carepatron IDs at import. The authorId must "
+            "identify the source team user who wrote the note. Follow the playbook to find "
+            "that ID from the author name; preserve the name as sourceRefs.authorName. "
+            "If the author cannot be uniquely identified, omit the note and report it. Never invent IDs. "
+            "Copy the source creation timestamp into note.createdAt with its timezone. "
             "CreatedAt is not dateOfService; set dateOfService=null unless explicitly evidenced. "
             "Do not infer a clinical note type from the title or template ID. "
             "Map Draft=Yes to status=draft; do not assume Draft=No proves signed. "

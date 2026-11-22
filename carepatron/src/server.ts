@@ -20,7 +20,7 @@ if (!demo) mkdirSync(folder, { recursive: true });
 const db = openDatabase(demo ? ':memory:' : `${folder}carepatron.db`);
 const app = createApp({ db, start: demo ? () => demoPractice() : emptyPractice });
 
-const server = serve({ fetch: app.fetch, port }, () => {
+const server = serve({ fetch: app.fetch, port, hostname: '127.0.0.1' }, () => {
   console.log(`
   Carepatron (mock) is running at http://localhost:${port}
 

@@ -5,6 +5,8 @@ from pathlib import Path
 import re
 from uuid import uuid4
 
+from migrator.utils.files import read_json
+
 
 MEMORY_TOOLS = [
     {"type": "function", "function": {
@@ -44,7 +46,7 @@ def create_memory_tools(directory: Path):
             path = (directory / f"{record_id}.json").resolve()
             if not path.is_relative_to(directory):
                 raise ValueError("Memory ID must stay within its directory")
-            return json.dumps({"id": record_id, "content": json.loads(path.read_text(encoding="utf-8"))},
+            return json.dumps({"id": record_id, "content": read_json(path)},
                               ensure_ascii=False, allow_nan=False)
         except (OSError, ValueError) as exc:
             return json.dumps({"error": type(exc).__name__, "message": "Could not load that memory ID."})

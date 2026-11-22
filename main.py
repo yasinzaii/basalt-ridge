@@ -15,6 +15,7 @@ from migrator.stages.practice import run_practice, save_practice
 from migrator.stages.clients import run_clients, save_clients
 from migrator.stages.appointments import run_appointments, save_appointments
 from migrator.stages.notes import run_notes, save_notes
+from migrator.stages.import_api import ApiError, import_run
 from migrator.utils.run_validation import validate_run
 from migrator.utils.files import write_json
 
@@ -29,16 +30,14 @@ STAGES = {
 }
 
 
-async def run(stage: str = DEFAULT_STAGE, playbook: Path | None = None,
-              output: Path | None = None, source: str = "cliniko") -> None:
+async def run(stage: str = DEFAULT_STAGE, output: Path | None = None,
+              source: str = "cliniko") -> Path:
     if source != "cliniko":
         raise ValueError("Only the Cliniko source is configured")
     if stage != "all" and stage not in STAGES:
         raise ValueError("Unknown stage")
-    if stage == "all" and playbook is not None:
-        raise ValueError("--playbook overrides one stage only; use --stage with it")
     selected = list(STAGES) if stage == "all" else [stage]
-    playbooks = {name: playbook or ROOT / f"migrator/playbooks/{source}/{name}.md" for name in selected}
+    playbooks = {name: ROOT / f"migrator/playbooks/{source}/{name}.md" for name in selected}
     for path in playbooks.values():
         if not path.read_text(encoding="utf-8").strip():
             raise ValueError(f"Empty playbook: {path.name}")
@@ -93,21 +92,34 @@ async def run(stage: str = DEFAULT_STAGE, playbook: Path | None = None,
         print(f"Run saved to {output} ({manifest['status']})", flush=True)
 
 
+    return output
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", choices=["cliniko"], default="cliniko")
-    parser.add_argument("--stage", choices=["all", *STAGES], default=DEFAULT_STAGE)
-    parser.add_argument("--playbook", type=Path)
+    parser.add_argument("--stage", choices=["all", *STAGES, "import"], default="import")
     parser.add_argument("--output", type=Path, help="New run directory; must not exist")
+    parser.add_argument("--run-dir", type=Path, help="Previous completed extraction directory")
+    parser.add_argument("--api-url", default="http://127.0.0.1:4000/api/v1")
     args = parser.parse_args()
     try:
-        asyncio.run(run(args.stage, args.playbook, args.output, args.source))
+        if args.stage == "import":
+            if args.run_dir is None:
+                raise ValueError("Provide --run-dir for the import stage")
+            report = import_run(args.run_dir, args.api_url)
+            print(f"Import saved to {args.run_dir / 'import' / 'report.json'}: {report['counts']}")
+            return 0
+        run_directory = asyncio.run(run(args.stage, args.output, args.source))
+        if args.stage == "all":
+            report = import_run(run_directory, args.api_url)
+            print(f"Import saved to {run_directory / 'import' / 'report.json'}: {report['counts']}")
         return 0
     except (AuthenticationError, PlaywrightError):
         print("Browser or login failed.", file=sys.stderr)
         return 1
-    except (ModelError, TurnLimitExceeded, ValueError, OSError) as exc:
-        print(f"Extraction failed: {exc}", file=sys.stderr)
+    except (ModelError, TurnLimitExceeded, ApiError, ValueError, OSError) as exc:
+        print(f"Migration failed: {exc}", file=sys.stderr)
         return 1
     except KeyboardInterrupt:
         return 130
