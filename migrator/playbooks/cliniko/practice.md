@@ -18,3 +18,14 @@ Use the signed-in account and these settings pages only. Never open patient reco
    Use only an explicit practice-level payer list visible within these settings, not general contacts. If none is available, return an empty list and report coverage as unavailable.
 
 Stop after these steps. Use source-only details as context or limitations, not extra fields in the Carepatron JSON.
+
+
+Preserve source identities while reading these pages:
+- Team: user ID as `sourceId`; explicitly associated practitioner ID as
+  `sourceRefs.practitionerId`. A user ID is not automatically a practitioner ID.
+- Locations: business ID as `sourceId`. Services: appointment type ID as
+  `sourceId`, not the related billable item ID. Payers: the payer's own ID if shown.
+- Read IDs from verified detail links/URLs or labelled fields and retain the
+  detail URL as `sourceRefs.url`. If unavailable, use null and report the gap.
+  Never infer an ID from a name or fabricate one. Names/emails remain in the
+  resource fields as later lookup evidence.

@@ -11,15 +11,74 @@ KINDS = ("practice", "team", "locations", "services", "payers")
 
 
 def practice_output_schema() -> dict:
+    nullable_id = {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}]}
+    source_refs = {
+        "type": "object",
+        "properties": {"url": nullable_id},
+        "required": ["url"],
+        "additionalProperties": False,
+    }
     properties = {
-        name: model_schema(load_schema(name))
-        for name in KINDS
+        "practice": model_schema(load_schema("practice")),
+        "team": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "sourceId": nullable_id,
+                    "teamMember": model_schema(load_schema("team")["items"]),
+                    "sourceRefs": {
+                        "type": "object",
+                        "properties": {"url": nullable_id, "practitionerId": nullable_id},
+                        "required": ["url", "practitionerId"],
+                        "additionalProperties": False,
+                    },
+                },
+                "required": ["sourceId", "teamMember", "sourceRefs"],
+                "additionalProperties": False,
+            },
+        },
+        "locations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "sourceId": nullable_id,
+                    "location": model_schema(load_schema("locations")["items"]),
+                    "sourceRefs": source_refs,
+                },
+                "required": ["sourceId", "location", "sourceRefs"],
+                "additionalProperties": False,
+            },
+        },
+        "services": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "sourceId": nullable_id,
+                    "service": model_schema(load_schema("services")["items"]),
+                    "sourceRefs": source_refs,
+                },
+                "required": ["sourceId", "service", "sourceRefs"],
+                "additionalProperties": False,
+            },
+        },
+        "payers": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "sourceId": nullable_id,
+                    "payer": model_schema(load_schema("payers")["items"]),
+                    "sourceRefs": source_refs,
+                },
+                "required": ["sourceId", "payer", "sourceRefs"],
+                "additionalProperties": False,
+            },
+        },
+        "limitations": {"type": "array", "items": {"type": "string"}},
     }
-    properties["limitations"] = {
-        "type": "array",
-        "items": {"type": "string"},
-    }
-
     return {
         "type": "object",
         "properties": properties,
@@ -31,24 +90,14 @@ def practice_output_schema() -> dict:
 def prepare_payloads(result: dict) -> tuple[dict, list[str]]:
     validate(practice_output_schema(), result, "Extraction")
 
-    data = {
-        "practice": {
-            key: value
-            for key, value in result["practice"].items()
-            if value is not None
-        },
-        **{name: result[name] for name in KINDS[1:]},
-    }
-
-    for service in data["services"]:
-        if service.get("modifiers") is None:
-            service.pop("modifiers", None)
-
-    if not any(data.values()):
-        raise ValueError("No practice data was extracted")
-
-    for name, payload in data.items():
-        validate(load_schema(name), payload, name)
+    data = {kind: result[kind] for kind in KINDS}
+    for kind in KINDS[1:]:
+        ids = [record["sourceId"] for record in data[kind] if record["sourceId"] is not None]
+        if len(ids) != len(set(ids)):
+            raise ValueError(f"Duplicate source IDs in {kind}")
+    if not any(data["practice"].values()) and not any(data[kind] for kind in KINDS[1:]):
+        if not any(item.strip() for item in result["limitations"]):
+            raise ValueError("No practice data extracted and no explanation provided")
 
     if timezone := data["practice"].get("timezone"):
         try:
@@ -77,10 +126,14 @@ async def run_practice(
             "role": "system",
             "content": (
                 "Extract practice, team, locations, services and payers following the playbook. "
-                "Return exact Carepatron API fields without destination IDs. "
+                "Return Carepatron fields inside each resource wrapper, with observed sourceId "
+                "and sourceRefs alongside it. For team records preserve the source user ID as "
+                "sourceId and any explicitly associated practitioner ID in sourceRefs.practitionerId. "
+                "Never assume user and practitioner IDs are the same. Preserve verified detail URLs "
+                "as sourceRefs.url; use null for unavailable IDs or URLs and report them. "
                 "Never invent values or use unverified defaults. "
-                "For unknown practice fields use null. For other records, use null only "
-                "where the API permits it; omit incomplete records and report them in limitations. "
+                "Use null for unknown optional fields; these are extraction records, not API payloads. "
+                "Omit records missing required extraction fields and report them in limitations. "
                 "Never modify the source. "
                 "Only save browser results when they contain information worth remembering. "
                 "Old browser refs are not actionable. "
@@ -135,7 +188,7 @@ def save_practice(result: dict, directory: Path) -> dict:
         "owner_indices": [
             index
             for index, member in enumerate(data["team"])
-            if member.get("role") == "owner"
+            if member["teamMember"].get("role") == "owner"
         ],
         "owner_action": (
             "Map to the existing destination owner; do not POST an owner."

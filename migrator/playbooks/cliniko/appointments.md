@@ -1,4 +1,3 @@
-
 # Cliniko appointment CSV export
 
 Use the signed-in fictional trial account. Start with `browser_observe`.
@@ -7,11 +6,12 @@ Use `save_result=false` unless an observation needs to be retrieved later.
 1. Navigate to **Settings → Data exports**.
 
 2. Select **appointments (deprecated)** under **Data to export**.
-   Keep **Spreadsheet (.csv)**. If unavailable, report the blocker.
+   Keep **Spreadsheet (.csv)**. If unavailable or disabled, report the blocker;
+   do not substitute another export type.
 
 3. Clear the date range:
    - Click the **From** textbox to open its calendar.
-   - Click the enabled **Any time** button.
+   - In the returned snapshot, click that calendar's enabled **Any time** button.
    - Repeat for **To**.
    - Verify both dates are cleared.
 
@@ -29,12 +29,12 @@ Use `save_result=false` unless an observation needs to be retrieved later.
 7. Map verified CSV fields to the Carepatron appointment schema:
 
    - Appointment ID → `sourceId`
-   - Patient IDs → `sourceRefs.clientIds`
-   - Practitioner ID → `sourceRefs.clinicianId`
+   - Patient IDs → `appointment.clientIds`
+   - Practitioner ID → `appointment.clinicianId`
    - Practitioner → `sourceRefs.clinicianName`
    - Appointment Type → `sourceRefs.serviceName`
    - Business → `sourceRefs.locationName`
-   - Recurring series ID, if available → `sourceRefs.seriesId`
+   - Recurring series ID, if available → `appointment.seriesId`
    - Appointment Type → `appointment.title`, if appropriate
    - Start Time → `appointment.startsAt`
    - End Time → `appointment.endsAt`
@@ -59,16 +59,18 @@ For group appointments, preserve all verified patient IDs.
 Do not infer membership by patient name or treat a participant's
 cancellation as cancellation of the whole appointment.
 
-The `appointment` object must contain only Carepatron fields.
-Set unresolved `appointment.clientIds`, `clinicianId`,
-`serviceId`, and `locationId` to null. Keep original source
-references separately in `sourceRefs`; never copy source IDs
-into destination ID fields.
+These are staged extraction records, not API payloads. `appointment.clientIds`
+must contain a nonempty array of verified source patient IDs; omit a record with
+no patient IDs and report it. Preserve an available source Practitioner ID in
+`appointment.clinicianId`; use null and report it only when the ID is missing.
+Never substitute a practitioner name for an ID.
 
-Preserve the Practitioner ID from the CSV as
-`appointment.clinicianId`. Never replace an available
-source ID with null or a practitioner name.
-If no practitioner ID exists, use null and report it.
+`sourceRefs` contains only clinician, service and location name hints.
+The export provides service/location names, so use null for `appointment.serviceId`
+and `appointment.locationId`; do not invent IDs from those names.
+Preserve an explicitly provided recurring series ID in `appointment.seriesId`,
+otherwise use null. A later importer must resolve source references before sending
+records to Carepatron.
 
 Report missing fields, ambiguous mappings, omitted records
 and incomplete coverage in `limitations`.

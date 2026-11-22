@@ -103,7 +103,9 @@ def save_clients(result: dict, directory: Path) -> dict:
     }
     directory.mkdir(parents=True, exist_ok=False)
     (directory / "schemas").mkdir()
-    for name, value in {"clients": clients, "source_ids": source_ids, "report": report}.items():
+    records = [{"sourceId": source_id, "client": client}
+               for source_id, client in zip(source_ids, clients, strict=True)]
+    for name, value in {"clients": records, "report": report}.items():
         (directory / f"{name}.json").write_text(
             json.dumps(value, indent=2, ensure_ascii=False, allow_nan=False) + "\n", encoding="utf-8"
         )
