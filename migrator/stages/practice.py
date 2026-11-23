@@ -157,7 +157,7 @@ async def run_practice(
     tools, execute = create_tools(
         browser,
         allowed_actions={"click"},
-        memory_directory=memory_directory,
+        memory_directory=memory_directory, stage_records=True,
     )
 
     return await run_agent(

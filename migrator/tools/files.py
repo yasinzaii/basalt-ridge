@@ -6,19 +6,18 @@ import json
 from pathlib import Path
 
 
-WORKSPACE = Path(__file__).resolve().parents[2] / "workspace"
 MAX_FILE_BYTES = 100_000
 
 LIST_FILES_SCHEMA = {
     "type": "function",
     "function": {
         "name": "list_files",
-        "description": "Recursively list files in a workspace directory, returning sorted workspace-relative paths as JSON.",
+        "description": "Recursively list files in the run download directory, returning relative paths as JSON.",
         "strict": True,
         "parameters": {
             "type": "object",
             "properties": {
-                "path": {"type": "string", "description": "Relative directory path; use . for the workspace root."},
+                "path": {"type": "string", "description": "Relative directory path; use . for the download directory."},
             },
             "required": ["path"],
             "additionalProperties": False,
@@ -62,14 +61,14 @@ READ_CSV_SCHEMA = {
 }
 
 
-def list_files(path: str = ".", *, directory: Path = WORKSPACE) -> str:
+def list_files(path: str = ".", *, directory: Path) -> str:
     root = directory.resolve()
     relative = Path(path)
     target = (root / relative).resolve()
     if relative.is_absolute() or not target.is_relative_to(root):
-        raise ValueError("Use a relative path inside the workspace")
+        raise ValueError("Use a relative path inside the download directory")
     if not target.is_dir():
-        raise NotADirectoryError("Requested workspace directory does not exist or is not a directory")
+        raise NotADirectoryError("Requested download directory does not exist or is not a directory")
     paths = sorted(
         file.relative_to(root).as_posix()
         for file in target.rglob("*")
@@ -78,12 +77,12 @@ def list_files(path: str = ".", *, directory: Path = WORKSPACE) -> str:
     return json.dumps(paths)
 
 
-def read_file(path: str, *, directory: Path = WORKSPACE) -> str:
+def read_file(path: str, *, directory: Path) -> str:
     root = directory.resolve()
     relative = Path(path)
     target = (root / relative).resolve()
     if relative.is_absolute() or not target.is_relative_to(root):
-        raise ValueError("Use a relative path inside the workspace")
+        raise ValueError("Use a relative path inside the download directory")
     with target.open("rb") as file:
         content = file.read(MAX_FILE_BYTES + 1)
     if len(content) > MAX_FILE_BYTES:

@@ -84,7 +84,7 @@ async def run_clients(backend, browser, playbook_path: Path, *, memory_directory
         )},
         {"role": "user", "content": "Extract the trial clients following the playbook."},
     ]
-    tools, execute = create_tools(browser, memory_directory=memory_directory, allowed_actions={"click", "select", "check"},
+    tools, execute = create_tools(browser, memory_directory=memory_directory, stage_records=True, allowed_actions={"click", "select", "check", "uncheck", "fill", "press"},
                                   download_directory=memory_directory / "downloads")
     return await run_agent(backend, messages, tools, execute, clients_output_schema(), max_turns=100)
 

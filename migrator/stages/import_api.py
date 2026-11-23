@@ -107,12 +107,11 @@ def import_run(run_dir: Path, api_url: str = "http://127.0.0.1:4000/api/v1", *,
     if owners:
         source_owner = owners[0]
         src_id = source_owner["sourceId"]
-        if src_id is None:
-            raise ValueError("Source owner needs a stable source ID for appointment links")
         payload = non_null({k: v for k, v in source_owner["teamMember"].items() if k not in ("email", "role")})
         result = api.request("PATCH", f"/team/{owner['id']}", payload)
         _check_returned(payload, result, "Owner")
-        ids["team"][src_id] = owner["id"]
+        if src_id:
+            ids["team"][src_id] = owner["id"]
         if source_owner["teamMember"].get("email") != owner["email"]:
             warn("Source owner email was not imported; the mock login email was retained")
 
@@ -121,10 +120,13 @@ def import_run(run_dir: Path, api_url: str = "http://127.0.0.1:4000/api/v1", *,
             source_id = record["sourceId"]
             if kind == "team" and record["teamMember"].get("role") == "owner":
                 continue
-            if not source_id:
-                warn(f"{kind}: skipped record with missing sourceId")
-                continue
             payload = non_null(record[WRAPPERS[kind]])
+            if kind == "locations" and isinstance(payload.get("address"), dict):
+                address = payload["address"].copy()
+                if not address.get("country"):
+                    address["country"] = "NZ"
+                    payload["address"] = address
+                    warn(f"location {source_id}: country missing; defaulted to NZ")
             if kind == "team":
                 if not payload.get("email") or payload["email"] == "unavailable@example.com":
                     warn(f"team {source_id}: missing/unverified email; skipped")
@@ -143,8 +145,7 @@ def import_run(run_dir: Path, api_url: str = "http://127.0.0.1:4000/api/v1", *,
                 continue
             if kind == "clients":
                 if "createdAt" not in payload:
-                    warn(f"client {source_id}: original creation date unknown; skipped instead of using today")
-                    continue
+                    warn(f"client {source_id}: original creation date unknown; destination defaults to current time")
                 for collection in ("diagnoses", "contacts"):
                     if collection not in payload:
                         warn(f"client {source_id}: {collection} unknown; destination defaults to empty list")
@@ -160,7 +161,8 @@ def import_run(run_dir: Path, api_url: str = "http://127.0.0.1:4000/api/v1", *,
             result = api.create(kind, payload)
             _check_returned(payload, result, f"{kind} {source_id}")
             _check_returned(payload, api.get(kind, result["id"]), f"{kind} {source_id} readback")
-            ids[kind][source_id] = result["id"]
+            if source_id:
+                ids[kind][source_id] = result["id"]
 
     practitioners = {}
     for member in data["team"]:
@@ -193,7 +195,8 @@ def import_run(run_dir: Path, api_url: str = "http://127.0.0.1:4000/api/v1", *,
         result = api.create("appointments", payload)
         _check_returned(payload, result, f"appointment {source_id}")
         _check_returned(payload, api.get("appointments", result["id"]), f"appointment {source_id} readback")
-        ids["appointments"][source_id] = result["id"]
+        if source_id:
+            ids["appointments"][source_id] = result["id"]
 
     for record in data["notes"]:
         source_id = record["sourceId"]
@@ -229,11 +232,11 @@ def import_run(run_dir: Path, api_url: str = "http://127.0.0.1:4000/api/v1", *,
         result = api.create("notes", payload)
         _check_returned(payload, result, f"note {source_id}")
         _check_returned(payload, api.get("notes", result["id"]), f"note {source_id} readback")
-        ids["notes"][source_id] = result["id"]
+        if source_id:
+            ids["notes"][source_id] = result["id"]
 
     warn("insurance policies: extraction stage not implemented; nothing imported")
     report = {"status": "completed_with_limitations" if warnings else "completed",
-              "counts": {kind: len(ids[kind]) for kind in KINDS},
               "warnings": warnings,
               "scope": "Mock API import. Warnings describe unresolved source details."}
     folder = run_dir / "import"

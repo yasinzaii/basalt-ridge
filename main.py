@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import os
 import sys
 from pathlib import Path
 from datetime import datetime
@@ -7,7 +8,7 @@ from datetime import datetime
 from playwright.async_api import Error as PlaywrightError
 
 from migrator.agent.loop import TurnLimitExceeded
-from migrator.browser.auth import AuthenticationError, wait_for_login
+from migrator.browser.auth import AuthenticationError, login, wait_for_login
 from migrator.browser.session import open_browser
 from migrator.llm.config import ModelConfig
 from migrator.llm.model import ModelError, connect_model
@@ -32,8 +33,6 @@ STAGES = {
 
 async def run(stage: str = DEFAULT_STAGE, output: Path | None = None,
               source: str = "cliniko") -> Path:
-    if source != "cliniko":
-        raise ValueError("Only the Cliniko source is configured")
     if stage != "all" and stage not in STAGES:
         raise ValueError("Unknown stage")
     selected = list(STAGES) if stage == "all" else [stage]
@@ -56,26 +55,37 @@ async def run(stage: str = DEFAULT_STAGE, output: Path | None = None,
     write_json(output / "manifest.json", manifest)
     active = None
     try:
-        async with open_browser(LOGIN_URL) as browser:
-            await wait_for_login(browser)
-            manifest["sourceAccountUrl"] = browser.page.url
-            write_json(output / "manifest.json", manifest)
+        login_url = LOGIN_URL if source == "cliniko" else os.getenv(
+            "ZANDA_LOGIN_URL", "https://my.zandahealth.com/Account/Login"
+        )
+        async with open_browser(login_url) as browser:
             async with connect_model(ModelConfig.from_env()) as backend:
-                for name in selected:
+                print(f"\n--- {source.title()} login started ---\n", flush=True)
+                if source == "cliniko":
+                    await wait_for_login(browser)
+                else:
+                    await login(backend, browser, source, ROOT / f"migrator/playbooks/{source}/login.md",
+                                memory_directory=output / "_work" / "login")
+                manifest["sourceAccountUrl"] = browser.page.url
+                write_json(output / "manifest.json", manifest)
+                for number, name in enumerate(selected, start=1):
                     active = name
                     state = manifest["stages"][name]
                     state["status"] = "running"
                     write_json(output / "manifest.json", manifest)
                     browser.invalidate_refs()
-                    print(f"{name.title()} extraction started.", flush=True)
+                    print(f"\n--- Stage {number}/{len(selected)}: {name.title()} extraction started ---\n", flush=True)
                     run_stage, save_stage = STAGES[name]
                     result = await run_stage(backend, browser, playbooks[name],
                                              memory_directory=output / "_work" / name)
                     report = save_stage(result, output / name)
                     state.update(status="completed", limitations=report["limitations"])
                     write_json(output / "manifest.json", manifest)
-                    for item in report["limitations"]:
-                        print(f"Limitation: {item}")
+                    print(f"\n{name.title()} extraction completed.", flush=True)
+                    if report["limitations"]:
+                        print("\nLimitations:", flush=True)
+                        for item in report["limitations"]:
+                            print(f"  - {item}\n", flush=True)
                     active = None
         validation = validate_run(output, manifest)
         write_json(output / "validation.json", validation)
@@ -85,19 +95,31 @@ async def run(stage: str = DEFAULT_STAGE, output: Path | None = None,
         manifest["error"] = type(exc).__name__
         if active is not None:
             manifest["stages"][active]["status"] = "failed"
+            print(f"\n{active.title()} extraction failed.", flush=True)
         raise
     finally:
         manifest["finishedAt"] = datetime.now().astimezone().isoformat()
         write_json(output / "manifest.json", manifest)
-        print(f"Run saved to {output} ({manifest['status']})", flush=True)
+        print(f"\nExtraction run saved to {output} ({manifest['status']})\n", flush=True)
 
 
     return output
 
 
+def run_import(directory: Path, api_url: str) -> None:
+    print("\n--- Import stage started ---\n", flush=True)
+    report = import_run(directory, api_url)
+    print("\nImport completed.", flush=True)
+    if report["warnings"]:
+        print("\nImport limitations:", flush=True)
+        for item in report["warnings"]:
+            print(f"  - {item}\n", flush=True)
+    print(f"Report saved to {directory / 'import' / 'report.json'}\n", flush=True)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source", choices=["cliniko"], default="cliniko")
+    parser.add_argument("--source", choices=["cliniko", "zanda"], default="cliniko")
     parser.add_argument("--stage", choices=["all", *STAGES, "import"], default="import")
     parser.add_argument("--output", type=Path, help="New run directory; must not exist")
     parser.add_argument("--run-dir", type=Path, help="Previous completed extraction directory")
@@ -107,13 +129,11 @@ def main() -> int:
         if args.stage == "import":
             if args.run_dir is None:
                 raise ValueError("Provide --run-dir for the import stage")
-            report = import_run(args.run_dir, args.api_url)
-            print(f"Import saved to {args.run_dir / 'import' / 'report.json'}: {report['counts']}")
+            run_import(args.run_dir, args.api_url)
             return 0
         run_directory = asyncio.run(run(args.stage, args.output, args.source))
         if args.stage == "all":
-            report = import_run(run_directory, args.api_url)
-            print(f"Import saved to {run_directory / 'import' / 'report.json'}: {report['counts']}")
+            run_import(run_directory, args.api_url)
         return 0
     except (AuthenticationError, PlaywrightError):
         print("Browser or login failed.", file=sys.stderr)

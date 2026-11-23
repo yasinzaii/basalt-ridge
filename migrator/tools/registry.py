@@ -3,11 +3,12 @@ from pathlib import Path
 
 from migrator.tools.browser import create_browser_tools
 from migrator.tools.memory import create_memory_tools
+from migrator.tools.stage_records import create_stage_record_tools
 from migrator.tools.files import create_file_tools
 
 
 def create_tools(browser, *, memory_directory: Path, allowed_actions=None,
-                 download_directory: Path | None = None):
+                 download_directory: Path | None = None, stage_records: bool = False):
     browser_tools, execute_browser = create_browser_tools(
         browser,
         allowed_actions=allowed_actions,
@@ -19,12 +20,16 @@ def create_tools(browser, *, memory_directory: Path, allowed_actions=None,
         memory_directory
     )
 
+    record_tools, execute_records = create_stage_record_tools(memory_directory) if stage_records else ([], None)
+
     file_tools = []
     if download_directory is not None:
         file_tools, execute_file = create_file_tools(download_directory)
     file_names = {tool["function"]["name"] for tool in file_tools}
 
     async def execute(name: str, arguments: dict) -> str:
+        if name in {"append_record", "load_records"} and execute_records is not None:
+            return await execute_records(name, arguments)
         if name in file_names:
             return await execute_file(name, arguments)
         if name == "memory_load":
@@ -33,4 +38,4 @@ def create_tools(browser, *, memory_directory: Path, allowed_actions=None,
 
         return await execute_browser(name, arguments)
 
-    return browser_tools + memory_tools + file_tools, execute
+    return browser_tools + memory_tools + record_tools + file_tools, execute

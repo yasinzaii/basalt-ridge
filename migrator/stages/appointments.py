@@ -65,7 +65,7 @@ async def run_appointments(backend, browser, playbook_path: Path, *, memory_dire
         {"role": "user", "content": "Extract the trial appointments following the playbook."},
     ]
     tools, execute = create_tools(
-        browser, memory_directory=memory_directory, allowed_actions={"click", "select", "check"},
+        browser, memory_directory=memory_directory, stage_records=True, allowed_actions={"click", "select", "check", "uncheck", "fill", "press"},
         download_directory=memory_directory / "downloads",
     )
     return await run_agent(backend, messages, tools, execute, appointments_output_schema(), max_turns=100)
