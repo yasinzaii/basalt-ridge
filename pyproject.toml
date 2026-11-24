@@ -8,6 +8,8 @@ dependencies = [
     "jsonschema>=4",
     "tzdata",
     "playwright>=1.64",
+    "fastapi",
+    "uvicorn[standard]",
 ]
 
 [tool.uv]

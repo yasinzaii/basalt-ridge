@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Carepatron Migrator</title>
+  <style>
+    body { font: 16px system-ui, sans-serif; max-width: 650px; margin: 4rem auto; padding: 0 1rem; color: #222; }
+    label { display: block; margin: 1rem 0 .4rem; }
+    input, select, button { font: inherit; padding: .6rem; }
+    input, select { box-sizing: border-box; width: 100%; }
+    button { margin-top: 1rem; cursor: pointer; }
+    #question { margin-top: 1.5rem; padding: 1rem; background: #f4f6f8; }
+    #events { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <h1>Carepatron Migrator</h1>
+  <p>Choose a source to start extracting your practice data.</p>
+  <label for="source">Source</label>
+  <select id="source"><option value="cliniko">Cliniko</option><option value="zanda">Zanda</option></select>
+  <button id="start">Start extraction</button>
+  <form id="question" hidden>
+    <label id="prompt" for="answer"></label>
+    <input id="answer" autocomplete="off">
+    <button type="submit">Continue</button>
+  </form>
+  <h2>Progress</h2>
+  <div id="events" aria-live="polite"></div>
+  <script>
+    const start = document.querySelector('#start');
+    const source = document.querySelector('#source');
+    const question = document.querySelector('#question');
+    const prompt = document.querySelector('#prompt');
+    const answer = document.querySelector('#answer');
+    const events = document.querySelector('#events');
+    let socket;
+    function log(message) { events.textContent += message + '\n'; }
+    start.onclick = () => {
+      start.disabled = true;
+      source.disabled = true;
+      events.textContent = '';
+      socket = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+      socket.onopen = () => socket.send(JSON.stringify({source: source.value}));
+      socket.onmessage = ({data}) => {
+        const event = JSON.parse(data);
+        if (event.type === 'question') {
+          question.hidden = false;
+          answer.value = '';
+          answer.hidden = event.kind === 'manual';
+          answer.required = event.kind !== 'manual';
+          answer.type = event.input_type === 'password' ? 'password' : 'text';
+          prompt.textContent = event.kind === 'manual' ? event.message : event.label;
+          if (!answer.hidden) answer.focus();
+        } else if (event.type === 'progress') {
+          log(`${event.stage}: ${event.status}`);
+          event.limitations.forEach(item => log(`  - ${item}`));
+        } else if (event.type === 'done') {
+          log(`Extraction ${event.status}. Saved to ${event.directory}`);
+        } else if (event.type === 'error') {
+          log(event.message);
+        }
+      };
+      socket.onclose = () => { start.disabled = false; source.disabled = false; question.hidden = true; answer.value = ''; };
+      socket.onerror = () => log('Connection to the local application failed.');
+    };
+    question.onsubmit = event => {
+      event.preventDefault();
+      socket.send(JSON.stringify({value: answer.value}));
+      answer.value = '';
+      question.hidden = true;
+    };
+  </script>
+</body>
+</html>

@@ -32,7 +32,7 @@ STAGES = {
 
 
 async def run(stage: str = DEFAULT_STAGE, output: Path | None = None,
-              source: str = "cliniko") -> Path:
+              source: str = "cliniko", *, login_handler=None, progress=None) -> Path:
     if stage != "all" and stage not in STAGES:
         raise ValueError("Unknown stage")
     selected = list(STAGES) if stage == "all" else [stage]
@@ -61,7 +61,11 @@ async def run(stage: str = DEFAULT_STAGE, output: Path | None = None,
         async with open_browser(login_url) as browser:
             async with connect_model(ModelConfig.from_env()) as backend:
                 print(f"\n--- {source.title()} login started ---\n", flush=True)
-                if source == "cliniko":
+                if progress:
+                    await progress("login", "Signing in")
+                if login_handler:
+                    await login_handler(backend, browser, source, output / "_work" / "login")
+                elif source == "cliniko":
                     await wait_for_login(browser)
                 else:
                     await login(backend, browser, source, ROOT / f"migrator/playbooks/{source}/login.md",
@@ -75,6 +79,8 @@ async def run(stage: str = DEFAULT_STAGE, output: Path | None = None,
                     write_json(output / "manifest.json", manifest)
                     browser.invalidate_refs()
                     print(f"\n--- Stage {number}/{len(selected)}: {name.title()} extraction started ---\n", flush=True)
+                    if progress:
+                        await progress(name, "Extracting")
                     run_stage, save_stage = STAGES[name]
                     result = await run_stage(backend, browser, playbooks[name],
                                              memory_directory=output / "_work" / name)
@@ -82,6 +88,8 @@ async def run(stage: str = DEFAULT_STAGE, output: Path | None = None,
                     state.update(status="completed", limitations=report["limitations"])
                     write_json(output / "manifest.json", manifest)
                     print(f"\n{name.title()} extraction completed.", flush=True)
+                    if progress:
+                        await progress(name, "Completed", report["limitations"])
                     if report["limitations"]:
                         print("\nLimitations:", flush=True)
                         for item in report["limitations"]:
