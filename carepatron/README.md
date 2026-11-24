@@ -14,10 +14,10 @@ It needs Node.js 24 or later. Set `PORT` to use a different port. Sign in to eit
 
 `npm start` opens your practice. It starts empty, with just the practice and its owner (the account you sign in with), and fills up as your tool moves things in. To start again, use **Settings › Start over**, or `POST /api/v1/reset`.
 
-Everything is kept in a SQLite database, `.data/carepatron.db`, so it's still there after a restart, and you can check a migration with `sqlite3` or any SQLite app. Each kind of record has a table (`clients`, `insurance_policies`, `appointments`, `notes`…) with a column for each field, so `firstName` is `first_name`. Lists and nested details, such as an address, are stored as JSON. References are foreign keys, apart from an appointment's `client_ids`, which is a JSON list.
+Everything is kept in a SQLite database, `../artifacts/carepatron/carepatron.db`, so it's still there after a restart, and you can check a migration with `sqlite3` or any SQLite app. Each kind of record has a table (`clients`, `insurance_policies`, `appointments`, `notes`…) with a column for each field, so `firstName` is `first_name`. Lists and nested details, such as an address, are stored as JSON. References are foreign keys, apart from an appointment's `client_ids`, which is a JSON list.
 
 ```bash
-sqlite3 .data/carepatron.db "SELECT first_name, last_name, date_of_birth FROM clients"
+sqlite3 ../artifacts/carepatron/carepatron.db "SELECT first_name, last_name, date_of_birth FROM clients"
 ```
 
 `npm run demo` opens Lakeshore Therapy Group: a fictional practice with 37 clients, about 420 appointments, about 340 notes, their insurance, and its full settings. It shows what a practice looks like once it's set up. It lives in memory, so you can change it, but it's rebuilt every time it starts, and your own practice isn't touched.

@@ -1,0 +1,45 @@
+services:
+  migrator:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM python:3.14-bookworm
+        RUN pip install uv==0.13.9
+        WORKDIR /app
+        COPY pyproject.toml uv.lock ./
+        RUN uv sync --locked --no-dev
+        RUN uv run --locked --no-dev playwright install --with-deps chromium
+        COPY main.py ./
+        COPY migrator/ ./migrator/
+        EXPOSE 8000
+        CMD ["uv", "run", "--locked", "--no-dev", "uvicorn", "migrator.web.app:app", "--host", "0.0.0.0", "--port", "8000"]
+    init: true
+    shm_size: 1gb
+    env_file: .env
+    environment:
+      MIGRATOR_HEADLESS: ${MIGRATOR_HEADLESS:-true}
+      MIGRATOR_OUTPUT_DIR: /data/artifacts
+      MIGRATOR_CAREPATRON_URL: ${MIGRATOR_CAREPATRON_URL:-http://carepatron:4000/api/v1}
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./artifacts/migrator:/data/artifacts
+
+  carepatron:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM node:24-bookworm-slim
+        WORKDIR /app/carepatron
+        COPY carepatron/package.json carepatron/package-lock.json ./
+        RUN npm ci --omit=dev
+        COPY carepatron/tsconfig.json ./
+        COPY carepatron/src/ ./src/
+        EXPOSE 4000
+        CMD ["npm", "start"]
+    environment:
+      HOST: 0.0.0.0
+    ports:
+      - "127.0.0.1:4000:4000"
+    volumes:
+      - ./artifacts/carepatron:/app/artifacts/carepatron

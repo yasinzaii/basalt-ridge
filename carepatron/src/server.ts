@@ -1,5 +1,5 @@
 // Starts the mock. `npm start` opens your practice on port 4000, stored in
-// SQLite at .data/carepatron.db: empty until something moves in, and still
+// SQLite at artifacts/carepatron/carepatron.db: empty until something moves in, and still
 // there next time. `npm run demo` opens a practice that's already set up on
 // port 4001, held in memory, so any changes are forgotten when it stops.
 
@@ -14,19 +14,20 @@ import { openDatabase } from './db';
 
 const demo = process.argv.includes('--demo');
 const port = Number(process.env.PORT ?? (demo ? 4001 : 4000));
-const folder = fileURLToPath(new URL('../.data/', import.meta.url));
+const hostname = process.env.HOST ?? '127.0.0.1';
+const folder = fileURLToPath(new URL('../../artifacts/carepatron/', import.meta.url));
 
 if (!demo) mkdirSync(folder, { recursive: true });
 const db = openDatabase(demo ? ':memory:' : `${folder}carepatron.db`);
 const app = createApp({ db, start: demo ? () => demoPractice() : emptyPractice });
 
-const server = serve({ fetch: app.fetch, port, hostname: '127.0.0.1' }, () => {
+const server = serve({ fetch: app.fetch, port, hostname }, () => {
   console.log(`
   Carepatron (mock) is running at http://localhost:${port}
 
   Sign in    ${LOGIN.email} / ${LOGIN.password}
   API        http://localhost:${port}/api/v1
-  ${demo ? 'Demo       A practice that is already set up. Changes are forgotten when it stops.' : 'Database   carepatron/.data/carepatron.db (SQLite). Settings › Start over empties it.'}
+  ${demo ? 'Demo       A practice that is already set up. Changes are forgotten when it stops.' : 'Database   artifacts/carepatron/carepatron.db (SQLite). Settings › Start over empties it.'}
 `);
 });
 

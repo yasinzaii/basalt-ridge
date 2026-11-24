@@ -8,6 +8,24 @@
 - Node.js 24 or later and npm
 - An OpenAI API key and access to the configured model
 
+## Run with Docker
+
+With Docker Desktop running, create `.env` from `.env.example` if needed and add your model API key. From the repository root, start both applications:
+
+```bash
+docker compose up --build
+```
+
+Open the migrator at http://localhost:8000 and the Carepatron mock at http://localhost:4000. The web app extracts records; importing is a separate step.
+
+To show the browser on WSL2 with WSLg, use:
+
+```bash
+docker compose -f compose.yaml -f compose.wsl.yaml up --build
+```
+
+See [DOCKER.md](DOCKER.md) for output locations and import instructions.
+
 ## Setup
 
 From the repository root, install the Python dependencies and Chromium:

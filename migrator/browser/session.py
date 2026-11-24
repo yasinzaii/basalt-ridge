@@ -129,9 +129,11 @@ class BrowserSession:
 @asynccontextmanager
 async def open_browser(login_url: str, *, headless: bool = False):
     async with async_playwright() as playwright:
-        browser = await playwright.chromium.launch(headless=headless)
+        browser = await playwright.chromium.launch(
+            headless=headless, args=[] if headless else ["--window-size=1600,1000"]
+        )
         try:
-            context = await browser.new_context()
+            context = await browser.new_context(no_viewport=not headless)
             context.set_default_timeout(10_000)
             context.set_default_navigation_timeout(30_000)
             page = await context.new_page()

@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 
 from main import run
 from migrator.utils.files import read_json
-from migrator.web.login import interactive_login
+from migrator.web.login import ManualLoginRequired, interactive_login
 
 app = FastAPI()
 run_lock = asyncio.Lock()
@@ -63,6 +63,8 @@ async def migration(websocket: WebSocket):
             await websocket.send_json({"type": "done", "directory": str(output), "status": manifest["status"]})
     except WebSocketDisconnect:
         pass
+    except ManualLoginRequired as exc:
+        await websocket.send_json({"type": "error", "message": str(exc)})
     except Exception as exc:
         try:
             await websocket.send_json({"type": "error", "message": f"Extraction failed: {type(exc).__name__}"})

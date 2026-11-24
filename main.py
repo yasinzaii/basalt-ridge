@@ -42,7 +42,8 @@ async def run(stage: str = DEFAULT_STAGE, output: Path | None = None,
             raise ValueError(f"Empty playbook: {path.name}")
     started = datetime.now().astimezone()
     stamp = started.strftime("%Y-%m-%d_%H-%M-%S_%f")
-    output = output or ROOT / "artifacts" / source / stamp
+    output_root = Path(os.getenv("MIGRATOR_OUTPUT_DIR", str(ROOT / "artifacts" / "migrator")))
+    output = output or output_root / source / stamp
     output.mkdir(parents=True, exist_ok=False)
     manifest = {
         "formatVersion": 2, "source": source, "runId": stamp,
@@ -58,7 +59,8 @@ async def run(stage: str = DEFAULT_STAGE, output: Path | None = None,
         login_url = LOGIN_URL if source == "cliniko" else os.getenv(
             "ZANDA_LOGIN_URL", "https://my.zandahealth.com/Account/Login"
         )
-        async with open_browser(login_url) as browser:
+        headless = os.getenv("MIGRATOR_HEADLESS", "false").strip().lower() in {"1", "true", "yes", "on"}
+        async with open_browser(login_url, headless=headless) as browser:
             async with connect_model(ModelConfig.from_env()) as backend:
                 print(f"\n--- {source.title()} login started ---\n", flush=True)
                 if progress:
@@ -131,7 +133,7 @@ def main() -> int:
     parser.add_argument("--stage", choices=["all", *STAGES, "import"], default="import")
     parser.add_argument("--output", type=Path, help="New run directory; must not exist")
     parser.add_argument("--run-dir", type=Path, help="Previous completed extraction directory")
-    parser.add_argument("--api-url", default="http://127.0.0.1:4000/api/v1")
+    parser.add_argument("--api-url", default=os.getenv("MIGRATOR_CAREPATRON_URL", "http://127.0.0.1:4000/api/v1"))
     args = parser.parse_args()
     try:
         if args.stage == "import":

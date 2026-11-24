@@ -1,4 +1,5 @@
 import json
+import os
 
 from migrator.agent.loop import run_agent
 from migrator.browser.session import BrowserActionError
@@ -41,6 +42,10 @@ MANUAL_TOOL = {
 }
 
 
+class ManualLoginRequired(RuntimeError):
+    """The source needs interaction with a visible browser."""
+
+
 async def interactive_login(backend, browser, source, memory_directory, ask):
     tools, browser_execute = create_tools(
         browser, memory_directory=memory_directory, allowed_actions={"click", "press"},
@@ -57,6 +62,8 @@ async def interactive_login(backend, browser, source, memory_directory, ask):
                 return json.dumps({"error": "Could not fill the field. Observe and try again."})
             return json.dumps({"filled": True})
         if name == "request_manual_step":
+            if os.getenv("MIGRATOR_HEADLESS", "false").strip().lower() in {"1", "true", "yes", "on"}:
+                raise ManualLoginRequired("This login needs a visible browser. Run locally with MIGRATOR_HEADLESS=false.")
             await ask({"kind": "manual", "message": arguments["message"]})
             browser.invalidate_refs()
             return json.dumps({"continued": True})

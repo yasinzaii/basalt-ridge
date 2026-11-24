@@ -73,6 +73,6 @@ async def connect_model(config: ModelConfig) -> AsyncIterator[ModelBackend]:
     async with AsyncOpenAI(
         api_key=config.api_key or "local-no-key",
         base_url=config.base_url or "https://api.openai.com/v1",
-        timeout=config.timeout_seconds, max_retries=0,
+        timeout=config.timeout_seconds, max_retries=2,
     ) as client:
         yield ChatCompletionsBackend(client, config)

@@ -1,0 +1,7 @@
+services:
+  migrator:
+    environment:
+      MIGRATOR_HEADLESS: "false"
+      DISPLAY: ${DISPLAY:-:0}
+    volumes:
+      - /mnt/wslg/.X11-unix:/tmp/.X11-unix:ro

@@ -1,0 +1,12 @@
+.git/
+.venv/
+.env
+.env.*
+.runs/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+artifacts/
+workspace/
+carepatron/node_modules/
+carepatron/.data/
